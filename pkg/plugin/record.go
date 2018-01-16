@@ -14,6 +14,7 @@ type PluginRecord struct {
 	Disable  string                `json:"disable"`
 	Cron     *cron.CronTaskSetting `json:"cron,omitempty"`
 	Data     []PluginData          `json:"data"`
+	SubData  []PluginData          `json:"subData,omitempty"`
 }
 
 func (r *PluginRecord) ToJson() []byte {

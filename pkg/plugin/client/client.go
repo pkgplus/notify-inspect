@@ -1,4 +1,4 @@
-package plugin
+package client
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/gorilla/websocket"
+	"github.com/xuebing1110/notify-inspect/pkg/plugin"
 )
 
 type registerClient struct {
@@ -30,7 +31,7 @@ func NewRegisterClient(addr string) *registerClient {
 	return &registerClient{addr: addr}
 }
 
-func (c *registerClient) Register(p *Plugin) error {
+func (c *registerClient) Register(p *plugin.Plugin) error {
 	if err := c.dial(); err != nil {
 		return err
 	}
@@ -47,7 +48,7 @@ func (c *registerClient) Register(p *Plugin) error {
 	}
 
 	// decode
-	p_resp, err := NewPlugin(resp_bytes)
+	p_resp, err := plugin.NewPlugin(resp_bytes)
 	if err != nil {
 		return fmt.Errorf("registe plugin failed: %v", err)
 	}

@@ -13,8 +13,12 @@ import (
 )
 
 var (
-	client = http.DefaultClient
+	client *http.Client
 )
+
+func init() {
+	client = http.DefaultClient
+}
 
 func (p *Plugin) BackendSubscribe(s *Subscribe) error {
 	url := fmt.Sprintf("%s/sub/users", p.ServeAddr)
@@ -42,7 +46,7 @@ func (p *Plugin) BackendSubscribe(s *Subscribe) error {
 }
 
 func (p *Plugin) BackendInspect(r *PluginRecord) (*wxmodels.Notice, error) {
-	url := fmt.Sprintf("%s/sub/users/%s/records", p.ServeAddr, r.UserId)
+	url := fmt.Sprintf("%s/sub/records", p.ServeAddr)
 
 	r.Cron = nil
 	body := r.ToJson()

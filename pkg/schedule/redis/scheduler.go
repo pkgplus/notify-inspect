@@ -73,7 +73,7 @@ func (s *UseRedisScheduler) fetch(curtime time.Time, tasks chan *cron.CronTaskSe
 		content := retZ.Member.(string)
 		s.Infof("found a task: %s", content)
 
-		task, err := schedule.NewCronTaskSetting([]byte(content))
+		task, err := cron.NewCronTaskSetting([]byte(content))
 		if err != nil {
 			s.Errorf("parse %s failed: %v", content, err)
 			continue

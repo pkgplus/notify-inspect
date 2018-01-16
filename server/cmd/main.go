@@ -1,9 +1,11 @@
 package main
 
 import (
+	"github.com/kataras/iris"
 	"os"
 
-	"github.com/kataras/iris"
+	"github.com/xuebing1110/notify-inspect/pkg/schedule"
+	_ "github.com/xuebing1110/notify-inspect/pkg/schedule/redis"
 	"github.com/xuebing1110/notify-inspect/server/app"
 
 	_ "github.com/xuebing1110/notify-inspect/pkg/plugin/storage/redis"
@@ -11,6 +13,11 @@ import (
 )
 
 func main() {
+	err := schedule.Start()
+	if err != nil {
+		panic(err)
+	}
+
 	// http server
 	irisApp := app.GetIrisApp()
 

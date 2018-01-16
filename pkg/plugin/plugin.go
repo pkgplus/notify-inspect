@@ -57,9 +57,9 @@ func NewPlugin(data []byte) (*Plugin, error) {
 	if p.TemplateMsgId == "" {
 		return nil, errors.New("the templateMsgId must be specified")
 	}
-	if len(p.RecordParams) == 0 {
-		return nil, errors.New("the recordParams must be specified")
-	}
+	// if len(p.RecordParams) == 0 {
+	// 	return nil, errors.New("the recordParams must be specified")
+	// }
 
 	// set registe time
 	// p.SetRegisterTime()

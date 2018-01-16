@@ -10,7 +10,6 @@ import (
 	"github.com/xuebing1110/notify-inspect/pkg/plugin/storage"
 	"github.com/xuebing1110/notify-inspect/pkg/schedule/cron"
 	"github.com/xuebing1110/notify/pkg/client"
-	"github.com/xuebing1110/notify/pkg/notice"
 )
 
 type Scheduler interface {
@@ -45,7 +44,7 @@ func runEveryMinute() {
 }
 
 func runTask(task *cron.CronTaskSetting) error {
-	uid, pid, rid, err := ParseTaskId(task.TaskId)
+	uid, pid, rid, err := task.ParseTaskId()
 	if err != nil {
 		return err
 	}
@@ -59,6 +58,18 @@ func runTask(task *cron.CronTaskSetting) error {
 	if err != nil {
 		return err
 	}
+
+	// Disable
+	if r.Disable != "False" && r.Disable != "false" && r.Disable != "0" {
+		return nil
+	}
+
+	// plugin sub info
+	s, err := storage.GlobalStorage.GetSubscribe(uid, pid)
+	if err != nil {
+		return err
+	}
+	r.SubData = s.Data
 
 	// call the backend service of the plugin
 	n, err := p.BackendInspect(r)
