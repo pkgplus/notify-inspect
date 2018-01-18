@@ -59,6 +59,27 @@ func (c *registerClient) Register(p *plugin.Plugin) error {
 		return fmt.Errorf("registe plugin failed: %s", resp_bytes)
 	}
 
+	// read loop
+	go func(p *plugin.Plugin) {
+		for {
+			msgtype, resp_bytes, err := c.conn.ReadMessage()
+			if err != nil {
+				log.GlobalLogger.Errorf("read message error:%v", err)
+				return
+			}
+
+			if msgtype == websocket.CloseMessage {
+				log.GlobalLogger.Errorf("get close message from register server: %s", resp_bytes)
+				time.Sleep(time.Minute)
+				err = c.Register(p)
+				if err != nil {
+					log.GlobalLogger.Errorf("register failed:%v", err)
+				}
+				return
+			}
+		}
+	}(p)
+
 	c.conn.SetCloseHandler(func(code int, text string) error {
 		log.GlobalLogger.Error("the connection with register server has been disconnected")
 		time.Sleep(time.Minute)
