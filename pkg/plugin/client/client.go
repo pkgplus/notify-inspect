@@ -34,6 +34,10 @@ func NewRegisterClient(addr string) *registerClient {
 }
 
 func (c *registerClient) Register(p *plugin.Plugin) error {
+	return c.register(p)
+}
+
+func (c *registerClient) register(p *plugin.Plugin) error {
 	log.GlobalLogger.Infof("now to register the plugin...")
 	if err := c.dial(); err != nil {
 		return err
@@ -66,21 +70,23 @@ func (c *registerClient) Register(p *plugin.Plugin) error {
 			if err != nil {
 				log.GlobalLogger.Errorf("read message error:%v", err)
 				time.Sleep(time.Minute)
-				err = c.Register(p)
+				err = c.register(p)
 				if err != nil {
 					log.GlobalLogger.Errorf("register failed:%v", err)
+				} else {
+					return
 				}
-				return
 			}
 
 			if msgtype == websocket.CloseMessage {
 				log.GlobalLogger.Errorf("get close message from register server: %s", resp_bytes)
 				time.Sleep(time.Minute)
-				err = c.Register(p)
+				err = c.register(p)
 				if err != nil {
 					log.GlobalLogger.Errorf("register failed:%v", err)
+				} else {
+					return
 				}
-				return
 			}
 		}
 	}(p)
@@ -88,7 +94,7 @@ func (c *registerClient) Register(p *plugin.Plugin) error {
 	c.conn.SetCloseHandler(func(code int, text string) error {
 		log.GlobalLogger.Error("the connection with register server has been disconnected")
 		time.Sleep(time.Minute)
-		return c.Register(p)
+		return c.register(p)
 	})
 
 	return nil
