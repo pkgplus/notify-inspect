@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/xuebing1110/notify-inspect/pkg/log"
 	"github.com/xuebing1110/notify-inspect/pkg/plugin"
 )
 
@@ -33,6 +34,7 @@ func NewRegisterClient(addr string) *registerClient {
 }
 
 func (c *registerClient) Register(p *plugin.Plugin) error {
+	log.GlobalLogger.Infof("now to register the plugin...")
 	if err := c.dial(); err != nil {
 		return err
 	}
@@ -58,6 +60,7 @@ func (c *registerClient) Register(p *plugin.Plugin) error {
 	}
 
 	c.conn.SetCloseHandler(func(code int, text string) error {
+		log.GlobalLogger.Error("the connection with register server has been disconnected")
 		time.Sleep(time.Minute)
 		return c.Register(p)
 	})
