@@ -104,12 +104,12 @@ func (c *registerClient) dial() (err error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	if c.conn == nil {
-		c.conn, _, err = websocket.DefaultDialer.Dial(c.addr, nil)
-		if err != nil {
-			return
-		}
+	// if c.conn == nil {
+	c.conn, _, err = websocket.DefaultDialer.Dial(c.addr, nil)
+	if err != nil {
+		return
 	}
+	// }
 
 	return
 }
