@@ -65,6 +65,11 @@ func (c *registerClient) Register(p *plugin.Plugin) error {
 			msgtype, resp_bytes, err := c.conn.ReadMessage()
 			if err != nil {
 				log.GlobalLogger.Errorf("read message error:%v", err)
+				time.Sleep(time.Minute)
+				err = c.Register(p)
+				if err != nil {
+					log.GlobalLogger.Errorf("register failed:%v", err)
+				}
 				return
 			}
 
