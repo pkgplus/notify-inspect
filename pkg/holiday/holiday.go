@@ -43,7 +43,7 @@ func init() {
 		calendar_key = key
 	}
 
-	loadHoliday(time.Now().Year())
+	// loadHoliday(time.Now().Year())
 }
 
 type HolidayYearMonthResp struct {
