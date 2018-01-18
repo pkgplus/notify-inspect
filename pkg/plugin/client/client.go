@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/xuebing1110/notify-inspect/pkg/plugin"
@@ -55,6 +56,11 @@ func (c *registerClient) Register(p *plugin.Plugin) error {
 	if p_resp.RegisterTime <= 0 {
 		return fmt.Errorf("registe plugin failed: %s", resp_bytes)
 	}
+
+	c.conn.SetCloseHandler(func(code int, text string) error {
+		time.Sleep(time.Minute)
+		return c.Register(p)
+	})
 
 	return nil
 }

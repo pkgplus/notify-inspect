@@ -56,8 +56,17 @@ func RegistePlugin(c websocket.Connection) {
 		// registerr plugin
 		plugin_req.ResetLost()
 		plugin_req.SetRegisterTime()
-		regServer.Register(plugin_req)
-		disconn_chan <- false
+		err = regServer.Register(plugin_req)
+		if err != nil {
+			logger.Errorf("get bad register plugin request: %s, error: %v", string(data), err)
+			plugin_req.RegisterTime = -1
+			plugin_req.RegisterTimeStr = err.Error()
+			c.EmitMessage(plugin_req.ToJson())
+			disconn_chan <- true
+			return
+		} else {
+			disconn_chan <- false
+		}
 
 		l.Lock()
 		pluginIds = append(pluginIds, plugin_req.Id)
