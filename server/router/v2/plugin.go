@@ -20,14 +20,14 @@ func plugin() {
 	plugin_api.Use(handlers.User)
 
 	// user subscribe plugin
-	plugin_api.Post("/plugins/:pid/sub", handlers.SavePluginSubscribe)
-	plugin_api.Get("/plugins/:pid/sub", handlers.GetPluginSubscribe)
-	plugin_api.Delete("/plugins/:pid/sub", handlers.DeletePluginSubscribe)
+	plugin_api.Post("/:pid/sub", handlers.SavePluginSubscribe)
+	plugin_api.Get("/:pid/sub", handlers.GetPluginSubscribe)
+	plugin_api.Delete("/:pid/sub", handlers.DeletePluginSubscribe)
 
 	// user plugin records
-	plugin_api.Get("/plugins/:pid/records", handlers.ListPluginRecords)
-	plugin_api.Post("/plugins/:pid/records", handlers.AddPluginRecord)
-	plugin_api.Get("/plugins/:pid/records/:rid", handlers.GetPluginRecord)
-	plugin_api.Put("/plugins/:pid/records/:rid", handlers.ModifyPluginRecord)
-	plugin_api.Delete("/plugins/:pid/records/:rid", handlers.AddPluginRecord)
+	plugin_api.Get("/:pid/records", handlers.ListPluginRecords)
+	plugin_api.Post("/:pid/records", handlers.AddPluginRecord)
+	plugin_api.Get("/:pid/records/:rid", handlers.GetPluginRecord)
+	plugin_api.Put("/:pid/records/:rid", handlers.ModifyPluginRecord)
+	plugin_api.Delete("/:pid/records/:rid", handlers.AddPluginRecord)
 }
