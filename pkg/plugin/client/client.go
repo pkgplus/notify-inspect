@@ -13,12 +13,12 @@ import (
 
 type registerClient struct {
 	addr  string
-	conn  *websocket.Conn
 	mutex sync.Mutex
 }
 
 var (
 	DefaultRegisterClient *registerClient
+	RECONN_TIME           = 15 * time.Second
 )
 
 func init() {
@@ -39,17 +39,18 @@ func (c *registerClient) Register(p *plugin.Plugin) error {
 
 func (c *registerClient) register(p *plugin.Plugin) error {
 	log.GlobalLogger.Infof("now to register the plugin...")
-	if err := c.dial(); err != nil {
+	conn, _, err := websocket.DefaultDialer.Dial(c.addr, nil)
+	if err != nil {
 		return err
 	}
 
 	// send message
-	if err := c.conn.WriteMessage(websocket.TextMessage, p.ToJson()); err != nil {
+	if err := conn.WriteMessage(websocket.TextMessage, p.ToJson()); err != nil {
 		return err
 	}
 
 	// read message
-	_, resp_bytes, err := c.conn.ReadMessage()
+	_, resp_bytes, err := conn.ReadMessage()
 	if err != nil {
 		return err
 	}
@@ -64,12 +65,18 @@ func (c *registerClient) register(p *plugin.Plugin) error {
 	}
 
 	// read loop
-	go func(p *plugin.Plugin) {
+	go func(p *plugin.Plugin, conn *websocket.Conn) {
+		conn.SetCloseHandler(func(code int, text string) error {
+			log.GlobalLogger.Error("the connection with register server has been disconnected")
+			time.Sleep(RECONN_TIME)
+			return c.register(p)
+		})
+
 		for {
-			msgtype, resp_bytes, err := c.conn.ReadMessage()
+			msgtype, resp_bytes, err := conn.ReadMessage()
 			if err != nil {
 				log.GlobalLogger.Errorf("read message error:%v", err)
-				time.Sleep(time.Minute)
+				time.Sleep(RECONN_TIME)
 				err = c.register(p)
 				if err != nil {
 					log.GlobalLogger.Errorf("register failed:%v", err)
@@ -80,7 +87,7 @@ func (c *registerClient) register(p *plugin.Plugin) error {
 
 			if msgtype == websocket.CloseMessage {
 				log.GlobalLogger.Errorf("get close message from register server: %s", resp_bytes)
-				time.Sleep(time.Minute)
+				time.Sleep(RECONN_TIME)
 				err = c.register(p)
 				if err != nil {
 					log.GlobalLogger.Errorf("register failed:%v", err)
@@ -89,27 +96,7 @@ func (c *registerClient) register(p *plugin.Plugin) error {
 				}
 			}
 		}
-	}(p)
-
-	c.conn.SetCloseHandler(func(code int, text string) error {
-		log.GlobalLogger.Error("the connection with register server has been disconnected")
-		time.Sleep(time.Minute)
-		return c.register(p)
-	})
+	}(p, conn)
 
 	return nil
-}
-
-func (c *registerClient) dial() (err error) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	// if c.conn == nil {
-	c.conn, _, err = websocket.DefaultDialer.Dial(c.addr, nil)
-	if err != nil {
-		return
-	}
-	// }
-
-	return
 }
