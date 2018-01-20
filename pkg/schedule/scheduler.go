@@ -13,9 +13,9 @@ import (
 )
 
 type Scheduler interface {
-	PutTask(task *cron.CronTaskSetting, curtime time.Time) error
+	PutTask(task *cron.CronTask, curtime time.Time) error
 	RemoveTask(taskid string) error
-	FetchTasks(curtime time.Time) <-chan *cron.CronTaskSetting
+	FetchTasks(curtime time.Time) <-chan *cron.CronTask
 }
 
 var (
@@ -38,13 +38,16 @@ func runEveryMinute() {
 		now_minute := now.Truncate(time.Minute)
 		for task := range DefaultScheduler.FetchTasks(now_minute) {
 			defer DefaultScheduler.PutTask(task, now_minute)
-			runTask(task)
+			err := runTask(task.Id)
+			if err != nil {
+				log.GlobalLogger.Errorf("run %s failed:%v", task.Id, err.Error())
+			}
 		}
 	}
 }
 
-func runTask(task *cron.CronTaskSetting) error {
-	uid, pid, rid, err := task.ParseTaskId()
+func runTask(taskid string) error {
+	uid, pid, rid, err := cron.ParseTaskId(taskid)
 	if err != nil {
 		return err
 	}

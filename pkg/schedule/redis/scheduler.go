@@ -14,6 +14,7 @@ import (
 
 const (
 	TASKS_SORTSET = "crontasks"
+	TASKS_DETAIL  = "crontasks.detail:"
 )
 
 type UseRedisScheduler struct {
@@ -29,15 +30,20 @@ func init() {
 	}
 }
 
-func (s *UseRedisScheduler) PutTask(task *cron.CronTaskSetting, curtime time.Time) error {
-	next_time, err := task.NextRunTime(curtime)
+func (s *UseRedisScheduler) PutTask(task *cron.CronTask, curtime time.Time) error {
+	next_time, err := task.Setting.NextRunTime(curtime)
 	if err != nil {
 		return err
 	}
 
+	hret := s.HMSet(TASKS_DETAIL+task.Id, task.Setting.Convert2Map())
+	if hret.Err() != nil {
+		return hret.Err()
+	}
+
 	zret := s.ZAdd(TASKS_SORTSET, redis.Z{
 		float64(next_time.Unix()),
-		task.String(),
+		task.Id,
 	})
 	return zret.Err()
 }
@@ -47,14 +53,14 @@ func (s *UseRedisScheduler) RemoveTask(taskid string) error {
 	return ret.Err()
 }
 
-func (s *UseRedisScheduler) FetchTasks(curtime time.Time) <-chan *cron.CronTaskSetting {
-	tasks := make(chan *cron.CronTaskSetting, 10)
+func (s *UseRedisScheduler) FetchTasks(curtime time.Time) <-chan *cron.CronTask {
+	tasks := make(chan *cron.CronTask, 10)
 
 	go s.fetch(curtime, tasks)
 	return tasks
 }
 
-func (s *UseRedisScheduler) fetch(curtime time.Time, tasks chan *cron.CronTaskSetting) {
+func (s *UseRedisScheduler) fetch(curtime time.Time, tasks chan *cron.CronTask) {
 	defer close(tasks)
 
 	ret := s.ZRevRangeByScoreWithScores(
@@ -70,16 +76,22 @@ func (s *UseRedisScheduler) fetch(curtime time.Time, tasks chan *cron.CronTaskSe
 	}
 
 	for _, retZ := range retZs {
-		content := retZ.Member.(string)
-		s.Infof("found a task: %s", content)
+		taskid := retZ.Member.(string)
+		s.Infof("found a task: %s", taskid)
 
-		task, err := cron.NewCronTaskSetting([]byte(content))
+		taskRet := s.HGetAll(TASKS_DETAIL + taskid)
 		if err != nil {
-			s.Errorf("parse %s failed: %v", content, err)
+			s.Errorf("get %s task detail failed: %v", taskid, err)
 			continue
 		}
 
-		s.Infof("emit a task: %s", content)
-		tasks <- task
+		taskSetting, err := cron.NewCronTaskSettingFromMap(taskRet.Val())
+		if err != nil {
+			s.Errorf("parse %s failed: %v", taskid, err)
+			continue
+		}
+
+		s.Infof("emit a task: %s", taskid)
+		tasks <- &cron.CronTask{taskid, taskSetting}
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/xuebing1110/notify-inspect/pkg/plugin/storage"
 	_ "github.com/xuebing1110/notify-inspect/pkg/plugin/storage/redis"
 	"github.com/xuebing1110/notify-inspect/pkg/schedule"
+	"github.com/xuebing1110/notify-inspect/pkg/schedule/cron"
 )
 
 func TestScheduler(t *testing.T) {
@@ -16,8 +17,7 @@ func TestScheduler(t *testing.T) {
 		UserId:   "admin",
 		PluginId: "test",
 		Disable:  "False",
-		Cron: &schedule.CronTaskSetting{
-			TaskId:          "admin.test.1",
+		Cron: &cron.CronTaskSetting{
 			Interval:        "1m",
 			ClockLimitStart: "08:00",
 			ClockLimitEnd:   "22:00",
@@ -34,12 +34,14 @@ func TestScheduler(t *testing.T) {
 	}
 
 	curtime, _ := time.ParseInLocation("2006-01-02 15:04:05", "2018-01-15 08:30:00", time.Local)
-	err = schedule.DefaultScheduler.PutTask(record.Cron, curtime)
+
+	task := record.GetCronTask()
+	err = schedule.DefaultScheduler.PutTask(task, curtime)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	tasks := make([]*schedule.CronTaskSetting, 0)
+	tasks := make([]*cron.CronTask, 0)
 	for task := range schedule.DefaultScheduler.FetchTasks(curtime.Add(time.Minute)) {
 		tasks = append(tasks, task)
 	}

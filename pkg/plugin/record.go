@@ -17,16 +17,27 @@ type PluginRecord struct {
 	SubData  []PluginData          `json:"subData,omitempty"`
 }
 
+func (r *PluginRecord) GetCronTask() *cron.CronTask {
+	return &cron.CronTask{r.GetIdentify(), r.Cron}
+}
+
 func (r *PluginRecord) ToJson() []byte {
 	data, _ := json.Marshal(r)
 	return data
+}
+
+func (pr *PluginRecord) GetIdentify() string {
+	return GenerateRecordIdentify(pr.UserId, pr.PluginId, pr.Id)
+}
+
+func GenerateRecordIdentify(uid, pid, id string) string {
+	return uid + "." + pid + "." + id
 }
 
 func (pr *PluginRecord) Convert2Map() map[string]interface{} {
 	data_bytes, _ := json.Marshal(pr.Data)
 
 	pr.Cron.Init()
-	pr.Cron.TaskId = pr.UserId + "." + pr.PluginId + "." + pr.Id
 
 	cron_bytes, _ := json.Marshal(pr.Cron)
 	return map[string]interface{}{

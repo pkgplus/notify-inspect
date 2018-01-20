@@ -18,8 +18,12 @@ var (
 	defaultFirstTime, _ = time.ParseInLocation("20060102150405", "19700101000000", localZone)
 )
 
+type CronTask struct {
+	Id      string           `json:"id"`
+	Setting *CronTaskSetting `json:"setting"`
+}
+
 type CronTaskSetting struct {
-	TaskId           string        `json:"taskId"`
 	FirstTimeStr     string        `json:"firstTimeStr,omitempty"`
 	Interval         string        `json:"interval"` // 1h or 5m
 	IntervalDuration time.Duration `json:"intervalDuration"`
@@ -45,6 +49,41 @@ func NewCronTaskSetting(setting_bytes []byte) (s *CronTaskSetting, err error) {
 	s = new(CronTaskSetting)
 	err = newCronTaskSetting(setting_bytes, s)
 	return
+}
+
+func NewCronTaskSettingFromMap(taskMap map[string]string) (s *CronTaskSetting, err error) {
+	s = &CronTaskSetting{
+		FirstTimeStr: taskMap["firstTimeStr"],
+		Interval:     taskMap["interval"],
+		// IntervalDuration: taskMap["intervalDuration"],
+		ClockLimitStart: taskMap["clockLimitStart"],
+		ClockLimitEnd:   taskMap["clockLimitEnd"],
+		WeekLimit:       taskMap["weekLimit"],
+	}
+	return s, s.Init()
+}
+
+func NewCronTaskSettingFromMap2(taskMap map[string]interface{}) (s *CronTaskSetting, err error) {
+	s = &CronTaskSetting{
+		FirstTimeStr: taskMap["firstTimeStr"].(string),
+		Interval:     taskMap["interval"].(string),
+		// IntervalDuration: taskMap["intervalDuration"],
+		ClockLimitStart: taskMap["clockLimitStart"].(string),
+		ClockLimitEnd:   taskMap["clockLimitEnd"].(string),
+		WeekLimit:       taskMap["weekLimit"].(string),
+	}
+	return s, s.Init()
+}
+
+func (s *CronTaskSetting) Convert2Map() map[string]interface{} {
+	return map[string]interface{}{
+		"firstTimeStr": s.FirstTimeStr,
+		"interval":     s.Interval,
+		// "intervalDuration": s.IntervalDuration,
+		"clockLimitStart": s.ClockLimitStart,
+		"clockLimitEnd":   s.ClockLimitEnd,
+		"weekLimit":       s.WeekLimit,
+	}
 }
 
 func (s *CronTaskSetting) Init() (err error) {
@@ -195,10 +234,10 @@ func (s *CronTaskSetting) String() string {
 	return string(bytes)
 }
 
-func (s *CronTaskSetting) ParseTaskId() (string, string, string, error) {
-	array := strings.Split(s.TaskId, ".")
+func ParseTaskId(taskid string) (string, string, string, error) {
+	array := strings.Split(taskid, ".")
 	if len(array) != 3 {
-		return "", "", "", fmt.Errorf("parse %s failed, taskId must be <userid.pluginid.recordid>", s.TaskId)
+		return "", "", "", fmt.Errorf("parse %s failed, taskId must be <userid.pluginid.recordid>", taskid)
 	}
 
 	return array[0], array[1], array[2], nil

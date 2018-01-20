@@ -9,6 +9,8 @@ import (
 
 	"github.com/xuebing1110/notify-inspect/pkg/plugin"
 	"github.com/xuebing1110/notify-inspect/pkg/plugin/storage"
+	"github.com/xuebing1110/notify-inspect/pkg/schedule"
+	"github.com/xuebing1110/notify-inspect/pkg/schedule/cron"
 )
 
 func ListPlugins(ctx context.Context) {
@@ -174,19 +176,27 @@ func AddPluginRecord(ctx context.Context) {
 	}
 
 	// PluginRecord
-	pinfo := new(plugin.PluginRecord)
-	err := ctx.ReadJSON(pinfo)
+	record := new(plugin.PluginRecord)
+	err := ctx.ReadJSON(record)
 	if err != nil {
 		SendResponse(ctx, http.StatusBadRequest, "ParsePluginRecordFailed", err.Error())
 		return
 	}
-	pinfo.UserId = uid
-	pinfo.PluginId = pid
-	if pinfo.Id == "" {
-		pinfo.Id = fmt.Sprintf("%d", time.Now().UnixNano())
+	record.UserId = uid
+	record.PluginId = pid
+	if record.Id == "" {
+		record.Id = fmt.Sprintf("%d", time.Now().UnixNano())
 	}
 
-	err = storage.GlobalStorage.SavePluginRecord(pinfo)
+	// put task
+	err = schedule.DefaultScheduler.PutTask(record.GetCronTask(), time.Now())
+	if err != nil {
+		SendResponse(ctx, http.StatusInternalServerError, "AddSchedulerTaskFailed", err.Error())
+		return
+	}
+
+	// save record
+	err = storage.GlobalStorage.SavePluginRecord(record)
 	if err != nil {
 		SendResponse(ctx, http.StatusInternalServerError, "SavePluginRecordFailed", err.Error())
 		return
@@ -226,7 +236,25 @@ func ModifyPluginRecord(ctx context.Context) {
 		return
 	}
 
-	found, err := storage.GlobalStorage.ModifyPluginRecord(uid, pid, rid, pmap)
+	// put task
+	cron_map, found := pmap["cron"]
+	if found {
+		cron_setting, err := cron.NewCronTaskSettingFromMap2(cron_map.(map[string]interface{}))
+		if err != nil {
+			SendResponse(ctx, http.StatusInternalServerError, "ParseCronTaskFailed", err.Error())
+			return
+		}
+
+		task := &cron.CronTask{plugin.GenerateRecordIdentify(uid, pid, rid), cron_setting}
+		err = schedule.DefaultScheduler.PutTask(task, time.Now())
+		if err != nil {
+			SendResponse(ctx, http.StatusInternalServerError, "AddSchedulerTaskFailed", err.Error())
+			return
+		}
+	}
+
+	// modify record
+	found, err = storage.GlobalStorage.ModifyPluginRecord(uid, pid, rid, pmap)
 	if err != nil {
 		SendResponse(ctx, http.StatusInternalServerError, "ModifyPluginRecord", err.Error())
 		return
@@ -257,7 +285,15 @@ func DeletePluginRecord(ctx context.Context) {
 		return
 	}
 
-	err := storage.GlobalStorage.DeletePluginRecord(uid, pid, rid)
+	// remove task
+	taskid := plugin.GenerateRecordIdentify(uid, pid, rid)
+	err := schedule.DefaultScheduler.RemoveTask(taskid)
+	if err != nil {
+		SendResponse(ctx, http.StatusInternalServerError, "DelSchedulerTaskFailed", err.Error())
+		return
+	}
+
+	err = storage.GlobalStorage.DeletePluginRecord(uid, pid, rid)
 	if err != nil {
 		SendResponse(ctx, http.StatusInternalServerError, "DeletePluginRecord", err.Error())
 		return
