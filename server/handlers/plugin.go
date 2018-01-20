@@ -49,9 +49,9 @@ func SavePluginSubscribe(ctx context.Context) {
 		return
 	}
 
-	code, err := p.BackendSubscribe(subscribe)
-	if err != nil {
-		SendResponse(ctx, code, "CallPluginServiceFailed", err.Error())
+	resp := p.BackendSubscribe(subscribe)
+	if resp.Code >= 400 {
+		ctx.JSON(resp)
 		return
 	}
 

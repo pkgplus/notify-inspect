@@ -20,36 +20,50 @@ func init() {
 	client = http.DefaultClient
 }
 
-func (p *Plugin) BackendSubscribe(s *Subscribe) (int, error) {
-	var status_code int
+func (p *Plugin) BackendSubscribe(s *Subscribe) *models.Response {
+
 	url := fmt.Sprintf("%s/sub/users", p.ServeAddr)
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(s.ToJson()))
 	if err != nil {
-		return status_code, err
+		return &models.Response{
+			Code:    http.StatusInternalServerError,
+			Message: "InternalServerError",
+			Detail:  err.Error(),
+		}
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return status_code, err
+		return &models.Response{
+			Code:    http.StatusInternalServerError,
+			Message: "InternalServerError",
+			Detail:  err.Error(),
+		}
 	}
 	defer resp.Body.Close()
 
 	resp_body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return status_code, err
+		return &models.Response{
+			Code:    http.StatusInternalServerError,
+			Message: "InternalServerError",
+			Detail:  err.Error(),
+		}
 	}
-	status_code = resp.StatusCode
+	if resp.StatusCode >= 400 {
+		log.GlobalLogger.Errorf("call %s failed: %s", url, resp_body)
+	}
 
 	call_resp, err := models.NewResponse(resp_body)
 	if err != nil {
-		return status_code, fmt.Errorf("%s", resp_body)
+		return &models.Response{
+			Code:    resp.StatusCode,
+			Message: "InternalServerError",
+			Detail:  string(resp_body),
+		}
 	}
 
-	if resp.StatusCode >= 400 {
-		log.GlobalLogger.Errorf("call %s failed: %s", url, resp_body)
-		return status_code, fmt.Errorf("%s: %s", call_resp.Message, call_resp.Detail)
-	}
-	return status_code, nil
+	return call_resp
 }
 
 func (p *Plugin) BackendInspect(r *PluginRecord) (*wxmodels.Notice, error) {
