@@ -34,8 +34,8 @@ func Start() error {
 
 func runEveryMinute() {
 	tick := time.Tick(time.Minute)
-	for now := range tick {
-		now_minute := now.Truncate(time.Minute)
+	for _ = range tick {
+		now_minute := time.Now().Truncate(time.Minute)
 		for task := range DefaultScheduler.FetchTasks(now_minute) {
 			defer DefaultScheduler.PutTask(task, now_minute)
 			err := runTask(task.Id)
