@@ -49,7 +49,7 @@ func (us *Subscribe) GetParamValue(id string) string {
 
 func Map2Subscribe(values map[string]string) (*Subscribe, error) {
 	data := make([]PluginData, 0)
-	err := json.Unmarshal([]byte(values["data"]), data)
+	err := json.Unmarshal([]byte(values["data"]), &data)
 	if err != nil {
 		return nil, err
 	}
