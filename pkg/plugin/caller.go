@@ -38,11 +38,16 @@ func (p *Plugin) BackendSubscribe(s *Subscribe) (int, error) {
 	if err != nil {
 		return status_code, err
 	}
-
 	status_code = resp.StatusCode
+
+	call_resp, err := models.NewResponse(resp_body)
+	if err != nil {
+		return status_code, fmt.Errorf("%s", resp_body)
+	}
+
 	if resp.StatusCode >= 400 {
 		log.GlobalLogger.Errorf("call %s failed: %s", url, resp_body)
-		return status_code, fmt.Errorf("call %s failed, statusCode: %d", url, resp.StatusCode)
+		return status_code, fmt.Errorf("%s: %s", call_resp.Message, call_resp.Detail)
 	}
 	return status_code, nil
 }
