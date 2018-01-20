@@ -20,29 +20,31 @@ func init() {
 	client = http.DefaultClient
 }
 
-func (p *Plugin) BackendSubscribe(s *Subscribe) error {
+func (p *Plugin) BackendSubscribe(s *Subscribe) (int, error) {
+	var status_code int
 	url := fmt.Sprintf("%s/sub/users", p.ServeAddr)
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(s.ToJson()))
 	if err != nil {
-		return err
+		return status_code, err
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return status_code, err
 	}
 	defer resp.Body.Close()
 
 	resp_body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return status_code, err
 	}
 
+	status_code = resp.StatusCode
 	if resp.StatusCode >= 400 {
 		log.GlobalLogger.Errorf("call %s failed: %s", url, resp_body)
-		return fmt.Errorf("call %s failed, statusCode: %d", url, resp.StatusCode)
+		return status_code, fmt.Errorf("call %s failed, statusCode: %d", url, resp.StatusCode)
 	}
-	return nil
+	return status_code, nil
 }
 
 func (p *Plugin) BackendInspect(r *PluginRecord) (*wxmodels.Notice, error) {

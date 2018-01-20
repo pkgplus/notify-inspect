@@ -43,6 +43,18 @@ func SavePluginSubscribe(ctx context.Context) {
 	}
 	subscribe.UserId = uid
 
+	p, found := plugin.DefaultRegisterServer.GetPlugin(subscribe.PluginId)
+	if !found {
+		SendResponse(ctx, http.StatusServiceUnavailable, "PluginOffline", fmt.Sprintf("the plugin %s is offline", subscribe.PluginId))
+		return
+	}
+
+	code, err := p.BackendSubscribe(subscribe)
+	if err != nil {
+		SendResponse(ctx, code, "CallPluginServiceFailed", err.Error())
+		return
+	}
+
 	// save
 	err = storage.GlobalStorage.SaveSubscribe(subscribe)
 	if err != nil {
