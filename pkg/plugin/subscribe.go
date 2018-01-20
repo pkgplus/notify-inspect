@@ -38,6 +38,15 @@ func (us *Subscribe) Convert2Map() map[string]interface{} {
 	}
 }
 
+func (us *Subscribe) GetParamValue(id string) string {
+	for _, param := range us.Data {
+		if param.Id == id {
+			return param.Value
+		}
+	}
+	return ""
+}
+
 func Map2Subscribe(values map[string]string) (*Subscribe, error) {
 	data := make([]PluginData, 0)
 	err := json.Unmarshal([]byte(values["data"]), data)

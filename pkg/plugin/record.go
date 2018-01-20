@@ -38,6 +38,20 @@ func (pr *PluginRecord) Convert2Map() map[string]interface{} {
 		"data":     string(data_bytes),
 	}
 }
+func (pr *PluginRecord) GetParamValue(id string) string {
+	for _, param := range pr.SubData {
+		if param.Id == id {
+			return param.Value
+		}
+	}
+
+	for _, param := range pr.Data {
+		if param.Id == id {
+			return param.Value
+		}
+	}
+	return ""
+}
 
 func Map2PluginRecord(values map[string]string) (*PluginRecord, error) {
 	data := make([]PluginData, 0)

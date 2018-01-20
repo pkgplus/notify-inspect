@@ -68,24 +68,6 @@ func NewPlugin(data []byte) (*Plugin, error) {
 	return p, nil
 }
 
-func (p *Plugin) GetParamValue(id string) string {
-	for _, param := range p.Params {
-		if param.Id == id {
-			return param.Value
-		}
-	}
-	return ""
-}
-
-func (p *Plugin) GetRecordParamValue(id string) string {
-	for _, param := range p.RecordParams {
-		if param.Id == id {
-			return param.Value
-		}
-	}
-	return ""
-}
-
 type PluginParam struct {
 	Id    string `json:"id"`
 	Name  string `json:"name"`
