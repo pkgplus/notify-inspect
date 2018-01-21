@@ -19,5 +19,5 @@ func init() {
 	api.Post("/:pid/records", handlers.AddPluginRecord)
 	api.Get("/:pid/records/:rid", handlers.GetPluginRecord)
 	api.Put("/:pid/records/:rid", handlers.ModifyPluginRecord)
-	api.Delete("/:pid/records/:rid", handlers.AddPluginRecord)
+	api.Delete("/:pid/records/:rid", handlers.DeletePluginRecord)
 }

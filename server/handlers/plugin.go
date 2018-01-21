@@ -188,6 +188,11 @@ func AddPluginRecord(ctx context.Context) {
 		record.Id = fmt.Sprintf("%d", time.Now().UnixNano())
 	}
 
+	if record.Cron == nil {
+		SendResponse(ctx, http.StatusBadRequest, "ParsePluginRecordFailed", "cron is require")
+		return
+	}
+
 	// put task
 	err = schedule.DefaultScheduler.PutTask(record.GetCronTask(), time.Now())
 	if err != nil {
