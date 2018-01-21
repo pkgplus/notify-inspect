@@ -31,6 +31,7 @@ func init() {
 }
 
 func (s *UseRedisScheduler) PutTask(task *cron.CronTask, curtime time.Time) error {
+	// fmt.Printf("task: %+v  curtime:%s\n", task, curtime.String())
 	next_time, err := task.Setting.NextRunTime(curtime)
 	if err != nil {
 		return err

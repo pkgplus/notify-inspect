@@ -288,15 +288,15 @@
 		},
 		{
 			"ImportPath": "github.com/xuebing1110/notify/pkg/client",
-			"Rev": "f0c6851815e7047f963c82a2852a04efcb345524"
+			"Rev": "064fb7e6b8ba25df4b3cd63f55473189dbdceb1c"
 		},
 		{
 			"ImportPath": "github.com/xuebing1110/notify/pkg/models",
-			"Rev": "f0c6851815e7047f963c82a2852a04efcb345524"
+			"Rev": "064fb7e6b8ba25df4b3cd63f55473189dbdceb1c"
 		},
 		{
 			"ImportPath": "github.com/xuebing1110/notify/pkg/wechat/models",
-			"Rev": "f0c6851815e7047f963c82a2852a04efcb345524"
+			"Rev": "064fb7e6b8ba25df4b3cd63f55473189dbdceb1c"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/acme",
