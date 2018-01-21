@@ -51,7 +51,12 @@ func (s *UseRedisScheduler) PutTask(task *cron.CronTask, curtime time.Time) erro
 
 func (s *UseRedisScheduler) RemoveTask(taskid string) error {
 	ret := s.ZRem(TASKS_SORTSET, taskid)
-	return ret.Err()
+	if ret.Err() != nil {
+		return ret.Err()
+	}
+
+	hret := s.Del(TASKS_DETAIL + taskid)
+	return hret.Err()
 }
 
 func (s *UseRedisScheduler) FetchTasks(curtime time.Time) <-chan *cron.CronTask {
@@ -82,6 +87,7 @@ func (s *UseRedisScheduler) fetch(curtime time.Time, tasks chan *cron.CronTask) 
 
 		taskRet := s.HGetAll(TASKS_DETAIL + taskid)
 		if err != nil {
+			s.RemoveTask(taskid)
 			s.Errorf("get %s task detail failed: %v", taskid, err)
 			continue
 		}
