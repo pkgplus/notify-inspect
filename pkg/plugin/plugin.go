@@ -70,7 +70,7 @@ func NewPlugin(data []byte) (*Plugin, error) {
 
 type PluginParam struct {
 	Id    string `json:"id"`
-	Name  string `json:"name"`
+	Name  string `json:"name,omitempty"`
 	Value string `json:"value"`
 
 	Candidates []PluginData `json:"candidates"`
@@ -78,6 +78,6 @@ type PluginParam struct {
 
 type PluginData struct {
 	Id    string `json:"id"`
-	Name  string `json:"name"`
+	Name  string `json:"name,omitempty"`
 	Value string `json:"value"`
 }
