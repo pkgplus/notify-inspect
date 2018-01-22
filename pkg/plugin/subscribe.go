@@ -27,6 +27,11 @@ func (us *Subscribe) ToJson() []byte {
 	return data
 }
 
+func (us *Subscribe) SetNotAvaliable(reason string) {
+	us.IsAvailable = "False"
+	us.ErrMsg = reason
+}
+
 func (us *Subscribe) Convert2Map() map[string]interface{} {
 	data_bytes, _ := json.Marshal(us.Data)
 	return map[string]interface{}{

@@ -46,7 +46,7 @@ func SavePluginSubscribe(ctx context.Context) {
 	subscribe.UserId = uid
 
 	p, found := plugin.DefaultRegisterServer.GetPlugin(subscribe.PluginId)
-	if !found {
+	if !found || p.LostTime > 0 {
 		SendResponse(ctx, http.StatusServiceUnavailable, "PluginOffline", fmt.Sprintf("the plugin %s is offline", subscribe.PluginId))
 		return
 	}
@@ -102,10 +102,24 @@ func GetPluginSubscribe(ctx context.Context) {
 		return
 	}
 
+	// get configure
 	ps, err := storage.GlobalStorage.GetSubscribe(uid, pid)
 	if err != nil {
 		SendResponse(ctx, http.StatusInternalServerError, "GetPluginSubscribeFailed", err.Error())
 		return
+	}
+
+	// get plugin
+	p, found := plugin.DefaultRegisterServer.GetPlugin(pid)
+	if !found || p.LostTime > 0 {
+		SendResponse(ctx, http.StatusServiceUnavailable, "PluginOffline", fmt.Sprintf("the plugin %s is offline", pid))
+		return
+	}
+
+	// get plugin subscribe status
+	resp := p.BackendGetSubscribe(ps)
+	if resp.Code < 400 {
+		ps.SetNotAvaliable(resp.Message)
 	}
 
 	SendNormalResponse(ctx, ps)
