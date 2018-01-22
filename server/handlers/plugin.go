@@ -112,7 +112,9 @@ func GetPluginSubscribe(ctx context.Context) {
 	// get plugin
 	p, found := plugin.DefaultRegisterServer.GetPlugin(pid)
 	if !found || p.LostTime > 0 {
-		SendResponse(ctx, http.StatusServiceUnavailable, "PluginOffline", fmt.Sprintf("the plugin %s is offline", pid))
+		ps.SetNotAvaliable(fmt.Sprintf("the plugin %s is offline", pid))
+		SendNormalResponse(ctx, ps)
+		// SendResponse(ctx, http.StatusServiceUnavailable, "PluginOffline")
 		return
 	}
 
