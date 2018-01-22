@@ -25,7 +25,7 @@ func (p *Plugin) BackendGetSubscribe(s *Subscribe) *models.Response {
 	req_url := fmt.Sprintf("%s/sub/users/%s", p.ServeAddr, s.UserId)
 
 	// url parameter
-	var url_param url.Values
+	url_param := url.Values{}
 	for _, param := range s.Data {
 		url_param.Set(param.Id, param.Value)
 	}
