@@ -9,7 +9,7 @@ import (
 type Plugin struct {
 	Id              string        `json:"id"`
 	Description     string        `json:"description"`
-	ServeAddr       string        `json:"serveAddr"`
+	ServerAddr      string        `json:"serverAddr"`
 	TemplateMsgId   string        `json:"templateMsgId"`
 	Emphasis        string        `json:"emphasis"`
 	Page            string        `json:"page"`
@@ -51,8 +51,8 @@ func NewPlugin(data []byte) (*Plugin, error) {
 	if p.Id == "" {
 		return nil, errors.New("the id must be specified")
 	}
-	if p.ServeAddr == "" {
-		return nil, errors.New("the serveAddr must be specified")
+	if p.ServerAddr == "" {
+		return nil, errors.New("the serverAddr must be specified")
 	}
 	if p.TemplateMsgId == "" {
 		return nil, errors.New("the templateMsgId must be specified")
