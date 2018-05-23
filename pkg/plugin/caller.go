@@ -22,7 +22,7 @@ func init() {
 }
 
 func (p *Plugin) BackendGetSubscribe(s *Subscribe) *models.Response {
-	req_url := fmt.Sprintf("%s/sub/users/%s", p.ServeAddr, s.UserId)
+	req_url := fmt.Sprintf("%s/sub/users/%s", p.ServerAddr, s.UserId)
 
 	// url parameter
 	url_param := url.Values{}
@@ -68,7 +68,7 @@ func (p *Plugin) BackendGetSubscribe(s *Subscribe) *models.Response {
 
 func (p *Plugin) BackendSubscribe(s *Subscribe) *models.Response {
 
-	req_url := fmt.Sprintf("%s/sub/users", p.ServeAddr)
+	req_url := fmt.Sprintf("%s/sub/users", p.ServerAddr)
 	req, err := http.NewRequest(http.MethodPost, req_url, bytes.NewReader(s.ToJson()))
 	if err != nil {
 		return &models.Response{
@@ -113,7 +113,7 @@ func (p *Plugin) BackendSubscribe(s *Subscribe) *models.Response {
 }
 
 func (p *Plugin) BackendInspect(r *PluginRecord) (*wxmodels.Notice, error) {
-	req_url := fmt.Sprintf("%s/sub/records", p.ServeAddr)
+	req_url := fmt.Sprintf("%s/sub/records", p.ServerAddr)
 
 	r.Cron = nil
 	body := r.ToJson()
