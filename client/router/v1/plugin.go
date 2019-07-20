@@ -5,6 +5,6 @@ import (
 )
 
 func plugin() {
-	api.Post("/sub/users", handlers.Subscribe)
-	api.Post("/sub/records", handlers.RecordNotice)
+	api.POST("/sub/users", handlers.Subscribe)
+	api.POST("/sub/records", handlers.RecordNotice)
 }

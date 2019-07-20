@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kataras/iris/context"
+	"github.com/gin-gonic/gin"
 
 	"github.com/xuebing1110/notify-inspect/pkg/plugin"
 	"github.com/xuebing1110/notify-inspect/pkg/plugin/storage"
@@ -13,12 +13,12 @@ import (
 	"github.com/xuebing1110/notify-inspect/pkg/schedule/cron"
 )
 
-func ListPlugins(ctx context.Context) {
+func ListPlugins(ctx *gin.Context) {
 	SendNormalResponse(ctx, regServer.ListPlugins())
 }
 
-func GetPlugin(ctx context.Context) {
-	pid := ctx.Params().Get("pid")
+func GetPlugin(ctx *gin.Context) {
+	pid := ctx.Param("pid")
 	pinfo, found := regServer.GetPlugin(pid)
 	if !found {
 		SendResponse(ctx, http.StatusNotFound, "unknownPlugin", "the plugin was not found")
@@ -28,22 +28,14 @@ func GetPlugin(ctx context.Context) {
 	SendNormalResponse(ctx, pinfo)
 }
 
-// user plugin setting
-func SavePluginSubscribe(ctx context.Context) {
-	uid := ctx.Values().GetString(CTX_USERID)
-	if uid == "" {
-		SendResponse(ctx, http.StatusInternalServerError, "unknownUser", "get userid from context failed")
+func CallPluginSubscribe(ctx *gin.Context) {
+	i, found := ctx.Get("subscribe")
+	if !found {
+		SendResponse(ctx, http.StatusInternalServerError, "ReadSubscribeFromCtxFailed", "read subscribe from context failed")
 		return
 	}
 
-	// subscribe
-	subscribe := new(plugin.Subscribe)
-	err := ctx.ReadJSON(subscribe)
-	if err != nil {
-		SendResponse(ctx, http.StatusBadRequest, "ParseSubscribeFailed", err.Error())
-		return
-	}
-	subscribe.UserId = uid
+	subscribe := i.(*plugin.Subscribe)
 
 	p, found := plugin.DefaultRegisterServer.GetPlugin(subscribe.PluginId)
 	if !found || p.LostTime > 0 {
@@ -51,10 +43,29 @@ func SavePluginSubscribe(ctx context.Context) {
 		return
 	}
 
-	resp := p.BackendSubscribe(subscribe)
+	resp := p.BackendSubscribe(ctx.Request.Context(), subscribe)
 	if resp.Code >= 400 {
-		ctx.JSON(resp)
+		ctx.JSON(resp.Code, resp)
 		return
+	}
+
+	SendNormalResponse(ctx, nil)
+}
+
+// user plugin setting
+func SavePluginSubscribe(ctx *gin.Context) {
+
+	// subscribe
+	subscribe := new(plugin.Subscribe)
+	err := ctx.BindJSON(subscribe)
+	if err != nil {
+		SendResponse(ctx, http.StatusBadRequest, "ParseSubscribeFailed", err.Error())
+		return
+	}
+
+	uid := ctx.GetString(CTX_USERID)
+	if uid != "" {
+		subscribe.UserId = uid
 	}
 
 	// save
@@ -64,17 +75,18 @@ func SavePluginSubscribe(ctx context.Context) {
 		return
 	}
 
-	SendNormalResponse(ctx, nil)
+	// save to context
+	ctx.Set("subscribe", subscribe)
 }
 
-func DeletePluginSubscribe(ctx context.Context) {
-	uid := ctx.Values().GetString(CTX_USERID)
+func DeletePluginSubscribe(ctx *gin.Context) {
+	uid := ctx.GetString(CTX_USERID)
 	if uid == "" {
 		sendNoUserResponse(ctx)
 		return
 	}
 
-	pid := ctx.Params().Get("pid")
+	pid := ctx.Param("pid")
 	if pid == "" {
 		SendResponse(ctx, http.StatusInternalServerError, "unknownPluginId", "read pluginid failed")
 		return
@@ -89,53 +101,68 @@ func DeletePluginSubscribe(ctx context.Context) {
 	SendNormalResponse(ctx, nil)
 }
 
-func GetPluginSubscribe(ctx context.Context) {
-	uid := ctx.Values().GetString(CTX_USERID)
+func GetPluginSubscribe(ctx *gin.Context) {
+	uid := ctx.GetString(CTX_USERID)
 	if uid == "" {
 		sendNoUserResponse(ctx)
 		return
 	}
 
-	pid := ctx.Params().Get("pid")
+	pid := ctx.Param("pid")
 	if pid == "" {
 		SendResponse(ctx, http.StatusInternalServerError, "unknownPluginId", "read pluginid failed")
 		return
 	}
 
 	// get configure
-	ps, err := storage.GlobalStorage.GetSubscribe(uid, pid)
+	subscribe, err := storage.GlobalStorage.GetSubscribe(uid, pid)
 	if err != nil {
 		SendResponse(ctx, http.StatusInternalServerError, "GetPluginSubscribeFailed", err.Error())
 		return
 	}
 
+	// save to context
+	ctx.Set("plugin", pid)
+	ctx.Set("subscribe", subscribe)
+}
+
+func CallPluginSubscribeStatus(ctx *gin.Context) {
+	i, found := ctx.Get("subscribe")
+	if !found {
+		SendResponse(ctx, http.StatusInternalServerError, "ReadSubscribeFromCtxFailed", "read subscribe from context failed")
+		return
+	}
+
+	subscribe := i.(*plugin.Subscribe)
+	pid := ctx.GetString("plugin")
+
 	// get plugin
 	p, found := plugin.DefaultRegisterServer.GetPlugin(pid)
 	if !found || p.LostTime > 0 {
-		ps.SetNotAvaliable(fmt.Sprintf("the plugin %s is offline", pid))
-		SendNormalResponse(ctx, ps)
+		subscribe.SetNotAvaliable(fmt.Sprintf("the plugin %s is offline", pid))
+		SendNormalResponse(ctx, subscribe)
 		// SendResponse(ctx, http.StatusServiceUnavailable, "PluginOffline")
 		return
 	}
 
 	// get plugin subscribe status
-	resp := p.BackendGetSubscribe(ps)
+	resp := p.BackendGetSubscribe(ctx.Request.Context(), subscribe)
 	if resp.Code < 400 {
-		ps.SetNotAvaliable(resp.Message)
+		subscribe.SetNotAvaliable(resp.Message)
 	}
 
-	SendNormalResponse(ctx, ps)
+	SendNormalResponse(ctx, subscribe)
 }
 
 // user plugin records
-func ListPluginRecords(ctx context.Context) {
-	uid := ctx.Values().GetString(CTX_USERID)
+func ListPluginRecords(ctx *gin.Context) {
+	uid := ctx.GetString(CTX_USERID)
 	if uid == "" {
 		sendNoUserResponse(ctx)
 		return
 	}
 
-	pid := ctx.Params().Get("pid")
+	pid := ctx.Param("pid")
 	if pid == "" {
 		SendResponse(ctx, http.StatusInternalServerError, "unknownPluginId", "read pluginid failed")
 		return
@@ -150,20 +177,20 @@ func ListPluginRecords(ctx context.Context) {
 	SendNormalResponse(ctx, prs)
 }
 
-func GetPluginRecord(ctx context.Context) {
-	uid := ctx.Values().GetString(CTX_USERID)
+func GetPluginRecord(ctx *gin.Context) {
+	uid := ctx.GetString(CTX_USERID)
 	if uid == "" {
 		sendNoUserResponse(ctx)
 		return
 	}
 
-	pid := ctx.Params().Get("pid")
+	pid := ctx.Param("pid")
 	if pid == "" {
 		SendResponse(ctx, http.StatusInternalServerError, "unknownPluginId", "read pluginid failed")
 		return
 	}
 
-	rid := ctx.Params().Get("rid")
+	rid := ctx.Param("rid")
 	if rid == "" {
 		SendResponse(ctx, http.StatusInternalServerError, "unknownRecordId", "read recordid failed")
 		return
@@ -178,14 +205,14 @@ func GetPluginRecord(ctx context.Context) {
 	SendNormalResponse(ctx, pr)
 }
 
-func AddPluginRecord(ctx context.Context) {
-	uid := ctx.Values().GetString(CTX_USERID)
+func AddPluginRecord(ctx *gin.Context) {
+	uid := ctx.GetString(CTX_USERID)
 	if uid == "" {
 		sendNoUserResponse(ctx)
 		return
 	}
 
-	pid := ctx.Params().Get("pid")
+	pid := ctx.Param("pid")
 	if pid == "" {
 		SendResponse(ctx, http.StatusInternalServerError, "unknownPluginId", "read pluginid failed")
 		return
@@ -193,7 +220,7 @@ func AddPluginRecord(ctx context.Context) {
 
 	// PluginRecord
 	record := new(plugin.PluginRecord)
-	err := ctx.ReadJSON(record)
+	err := ctx.BindJSON(record)
 	if err != nil {
 		SendResponse(ctx, http.StatusBadRequest, "ParsePluginRecordFailed", err.Error())
 		return
@@ -226,20 +253,20 @@ func AddPluginRecord(ctx context.Context) {
 	SendNormalResponse(ctx, nil)
 }
 
-func ModifyPluginRecord(ctx context.Context) {
-	uid := ctx.Values().GetString(CTX_USERID)
+func ModifyPluginRecord(ctx *gin.Context) {
+	uid := ctx.GetString(CTX_USERID)
 	if uid == "" {
 		sendNoUserResponse(ctx)
 		return
 	}
 
-	pid := ctx.Params().Get("pid")
+	pid := ctx.Param("pid")
 	if pid == "" {
 		SendResponse(ctx, http.StatusInternalServerError, "unknownPluginId", "read pluginid failed")
 		return
 	}
 
-	rid := ctx.Params().Get("rid")
+	rid := ctx.Param("rid")
 	if rid == "" {
 		SendResponse(ctx, http.StatusInternalServerError, "unknownRecordId", "read recordid failed")
 		return
@@ -247,7 +274,7 @@ func ModifyPluginRecord(ctx context.Context) {
 
 	// PluginRecord
 	pmap := make(map[string]interface{})
-	err := ctx.ReadJSON(pmap)
+	err := ctx.BindJSON(pmap)
 	if err != nil {
 		SendResponse(ctx, http.StatusBadRequest, "ParsePluginRecordFailed", err.Error())
 		return
@@ -288,19 +315,19 @@ func ModifyPluginRecord(ctx context.Context) {
 	SendNormalResponse(ctx, nil)
 }
 
-func DeletePluginRecord(ctx context.Context) {
-	uid := ctx.Values().GetString(CTX_USERID)
+func DeletePluginRecord(ctx *gin.Context) {
+	uid := ctx.GetString(CTX_USERID)
 	if uid == "" {
 		return
 	}
 
-	pid := ctx.Params().Get("pid")
+	pid := ctx.Param("pid")
 	if pid == "" {
 		SendResponse(ctx, http.StatusInternalServerError, "unknownPluginId", "read pluginid failed")
 		return
 	}
 
-	rid := ctx.Params().Get("rid")
+	rid := ctx.Param("rid")
 	if rid == "" {
 		SendResponse(ctx, http.StatusInternalServerError, "unknownRecordId", "read recordid failed")
 		return
@@ -323,6 +350,6 @@ func DeletePluginRecord(ctx context.Context) {
 	SendNormalResponse(ctx, nil)
 }
 
-func sendNoUserResponse(ctx context.Context) {
+func sendNoUserResponse(ctx *gin.Context) {
 	SendResponse(ctx, http.StatusInternalServerError, "unknownUser", "get userid from context failed")
 }

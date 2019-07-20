@@ -3,12 +3,13 @@ package redis
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/labstack/gommon/log"
 
 	"github.com/xuebing1110/notify-inspect/pkg/plugin"
 )
 
 const (
-	USER_RECORD_PREFIX = "plugin_user_record."
+	USER_RECORD_PREFIX = "plugin_user_record:"
 )
 
 func (redis *RedisStorage) SavePluginRecord(r *plugin.PluginRecord) error {
@@ -34,7 +35,7 @@ func (redis *RedisStorage) ListPluginRecords(uid, pluginid string) ([]*plugin.Pl
 	for _, key := range ret.Val() {
 		ur, err := redis.getPluginRecordByKey(key)
 		if err != nil {
-			redis.Errorf("read \"%s\" from redis failed:%v", key, err)
+			log.Printf("read \"%s\" from redis failed:%v", key, err)
 			continue
 		}
 		urs = append(urs, ur)

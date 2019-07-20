@@ -2,12 +2,12 @@ package redis
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"time"
 
 	"github.com/go-redis/redis"
 
-	"github.com/xuebing1110/notify-inspect/pkg/log"
-	myredis "github.com/xuebing1110/notify-inspect/pkg/redis"
 	"github.com/xuebing1110/notify-inspect/pkg/schedule"
 	"github.com/xuebing1110/notify-inspect/pkg/schedule/cron"
 )
@@ -19,15 +19,27 @@ const (
 
 type UseRedisScheduler struct {
 	*redis.Client
-	log.Logger
 	tasks chan *cron.CronTaskSetting
 }
 
 func init() {
 	schedule.DefaultScheduler = &UseRedisScheduler{
-		Client: myredis.GetClient(),
-		Logger: log.GlobalLogger,
+		Client: NewClientFromEnv(),
 	}
+}
+
+func NewClientFromEnv() *redis.Client {
+	// RedisClient
+	addr := os.Getenv("REDIS_ADDR")
+	passwd := os.Getenv("REDIS_PASSWD")
+	if addr == "" {
+		addr = "localhost:6379"
+	}
+	return redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: passwd,
+		DB:       0,
+	})
 }
 
 func (s *UseRedisScheduler) PutTask(task *cron.CronTask, curtime time.Time) error {
@@ -77,28 +89,28 @@ func (s *UseRedisScheduler) fetch(curtime time.Time, tasks chan *cron.CronTask) 
 		})
 	retZs, err := ret.Result()
 	if err != nil {
-		s.Errorf("fetch %s failed: %v", TASKS_SORTSET, err)
+		log.Printf("fetch %s failed: %v", TASKS_SORTSET, err)
 		return
 	}
 
 	for _, retZ := range retZs {
 		taskid := retZ.Member.(string)
-		s.Infof("found a task: %s", taskid)
+		log.Printf("found a task: %s", taskid)
 
 		taskRet := s.HGetAll(TASKS_DETAIL + taskid)
 		if err != nil {
 			s.RemoveTask(taskid)
-			s.Errorf("get %s task detail failed: %v", taskid, err)
+			log.Printf("get %s task detail failed: %v", taskid, err)
 			continue
 		}
 
 		taskSetting, err := cron.NewCronTaskSettingFromMap(taskRet.Val())
 		if err != nil {
-			s.Errorf("parse %s failed: %v", taskid, err)
+			log.Printf("parse %s failed: %v", taskid, err)
 			continue
 		}
 
-		s.Infof("emit a task: %s", taskid)
+		log.Printf("emit a task: %s", taskid)
 		tasks <- &cron.CronTask{taskid, taskSetting}
 	}
 }

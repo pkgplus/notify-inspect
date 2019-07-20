@@ -1,17 +1,18 @@
 package handlers
 
 import (
+	"github.com/gin-gonic/gin"
 	"net/http"
-
-	"github.com/kataras/iris/context"
 )
 
-func User(ctx context.Context) {
-	uid := ctx.GetHeader("X-Uid")
+const CTX_USERID = "X-USER"
+
+func User(ctx *gin.Context) {
+	uid := ctx.GetHeader("X-USER")
 	if uid == "" {
 		SendResponse(ctx, http.StatusBadRequest, "unknownUser", "the user must be specified")
 		return
 	}
-	ctx.Values().Set(CTX_USERID, uid)
+	ctx.Set(CTX_USERID, uid)
 	ctx.Next()
 }

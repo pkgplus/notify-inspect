@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"github.com/kataras/iris/context"
+	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
-func Subscribe(ctx context.Context) {
+func Subscribe(ctx *gin.Context) {
 	SendResponse(ctx, http.StatusOK, "OK", "")
 }

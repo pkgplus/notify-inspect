@@ -2,12 +2,12 @@ package client
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/xuebing1110/notify-inspect/pkg/log"
 	"github.com/xuebing1110/notify-inspect/pkg/plugin"
 )
 
@@ -38,7 +38,7 @@ func (c *registerClient) Register(p *plugin.Plugin) error {
 }
 
 func (c *registerClient) register(p *plugin.Plugin) error {
-	log.GlobalLogger.Infof("now to register the plugin...")
+	log.Printf("now to register the plugin...")
 	conn, _, err := websocket.DefaultDialer.Dial(c.addr, nil)
 	if err != nil {
 		return err
@@ -67,7 +67,7 @@ func (c *registerClient) register(p *plugin.Plugin) error {
 	// read loop
 	go func(p *plugin.Plugin, conn *websocket.Conn) {
 		conn.SetCloseHandler(func(code int, text string) error {
-			log.GlobalLogger.Error("the connection with register server has been disconnected")
+			log.Print("the connection with register server has been disconnected")
 			time.Sleep(RECONN_TIME)
 			return c.register(p)
 		})
@@ -75,22 +75,22 @@ func (c *registerClient) register(p *plugin.Plugin) error {
 		for {
 			msgtype, resp_bytes, err := conn.ReadMessage()
 			if err != nil {
-				log.GlobalLogger.Errorf("read message error:%v", err)
+				log.Printf("read message error:%v", err)
 				time.Sleep(RECONN_TIME)
 				err = c.register(p)
 				if err != nil {
-					log.GlobalLogger.Errorf("register failed:%v", err)
+					log.Printf("register failed:%v", err)
 				} else {
 					return
 				}
 			}
 
 			if msgtype == websocket.CloseMessage {
-				log.GlobalLogger.Errorf("get close message from register server: %s", resp_bytes)
+				log.Printf("get close message from register server: %s", resp_bytes)
 				time.Sleep(RECONN_TIME)
 				err = c.register(p)
 				if err != nil {
-					log.GlobalLogger.Errorf("register failed:%v", err)
+					log.Printf("register failed:%v", err)
 				} else {
 					return
 				}

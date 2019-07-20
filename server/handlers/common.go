@@ -1,31 +1,32 @@
 package handlers
 
 import (
-	"github.com/kataras/iris/context"
-	"github.com/xuebing1110/notify-inspect/pkg/models"
+	"github.com/gin-gonic/gin"
 )
 
-const (
-	CTX_USERID = "userid"
-)
-
-func SendResponse(ctx context.Context, code int, msg, detail string) {
-	resp := &models.Response{
+func SendResponse(ctx *gin.Context, code int, msg, detail string) {
+	resp := &Response{
 		Code:    code,
 		Message: msg,
 		Detail:  detail,
 	}
-	ctx.StatusCode(resp.Code)
-	ctx.JSON(resp)
+	ctx.JSON(resp.Code, resp)
+	ctx.Abort()
 }
 
-func SendNormalResponse(ctx context.Context, data interface{}) {
-	resp := &models.Response{
+func SendNormalResponse(ctx *gin.Context, data interface{}) {
+	resp := &Response{
 		Code:    200,
 		Message: "OK",
 		Detail:  "",
 		Data:    data,
 	}
-	ctx.StatusCode(resp.Code)
-	ctx.JSON(resp)
+	ctx.JSON(resp.Code, resp)
+}
+
+type Response struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Detail  string      `json:"detail"`
+	Data    interface{} `json:"data,omitempty"`
 }

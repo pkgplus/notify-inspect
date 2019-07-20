@@ -1,15 +1,16 @@
 package schedule
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
-	"github.com/xuebing1110/notify-inspect/pkg/log"
+	"github.com/xuebing1110/notify-inspect/pkg/notice"
 	"github.com/xuebing1110/notify-inspect/pkg/plugin"
 	"github.com/xuebing1110/notify-inspect/pkg/plugin/storage"
 	"github.com/xuebing1110/notify-inspect/pkg/schedule/cron"
-	"github.com/xuebing1110/notify/pkg/client"
 )
 
 type Scheduler interface {
@@ -39,7 +40,7 @@ func runEveryMinute() {
 		for task := range DefaultScheduler.FetchTasks(now_minute) {
 			err := runTask(task.Id)
 			if err != nil {
-				log.GlobalLogger.Errorf("run %s failed:%v", task.Id, err.Error())
+				log.Printf("run %s failed:%v", task.Id, err.Error())
 			}
 			DefaultScheduler.PutTask(task, now_minute)
 		}
@@ -47,6 +48,9 @@ func runEveryMinute() {
 }
 
 func runTask(taskid string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	uid, pid, rid, err := cron.ParseTaskId(taskid)
 	if err != nil {
 		return err
@@ -75,14 +79,14 @@ func runTask(taskid string) error {
 	r.SubData = s.Data
 
 	// call the backend service of the plugin
-	n, err := p.BackendInspect(r)
+	n, err := p.BackendInspect(ctx, r)
 	if err != nil {
 		return err
 	}
 
 	if n != nil {
-		log.GlobalLogger.Infof("send a notice: %+v", n)
-		err = client.SendNotice(n)
+		log.Printf("send a notice: %+v", n)
+		err = notice.Send(ctx, n)
 		if err != nil {
 			return err
 		} else {

@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"github.com/labstack/gommon/log"
 	"github.com/xuebing1110/notify-inspect/pkg/plugin"
 )
 
@@ -25,7 +26,7 @@ func (redis *RedisStorage) ListSubscribes(uid string) ([]*plugin.Subscribe, erro
 	for _, key := range ret.Val() {
 		us, err := redis.getSubscribeByKey(key)
 		if err != nil {
-			redis.Errorf("read \"%s\" from redis failed:%v", key, err)
+			log.Printf("read \"%s\" from redis failed:%v", key, err)
 			continue
 		}
 		uss = append(uss, us)

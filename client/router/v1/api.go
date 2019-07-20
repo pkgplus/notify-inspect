@@ -1,15 +1,14 @@
 package v1
 
 import (
-	"github.com/kataras/iris/core/router"
+	"github.com/gin-gonic/gin"
 	"github.com/xuebing1110/notify-inspect/client/app"
 )
 
-var api router.Party
+var api *gin.RouterGroup
 
 func init() {
-	irisApp := app.GetIrisApp()
-	api = irisApp.Party("/api/v1/plugins/" + app.APP_NAME)
+	api = app.GetApp().Group("/api/v1/plugins/" + app.APP_NAME)
 
 	plugin()
 }

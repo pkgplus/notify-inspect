@@ -1,16 +1,16 @@
 package app
 
 import (
+	"github.com/gin-gonic/gin"
 	"os"
 
-	"github.com/kataras/iris"
 	"github.com/xuebing1110/notify-inspect/pkg/plugin"
 	"github.com/xuebing1110/notify-inspect/pkg/plugin/client"
 )
 
 var (
 	APP_NAME string
-	IrisApp  *iris.Application
+	app      *gin.Engine
 )
 
 func init() {
@@ -26,7 +26,9 @@ func init() {
 		panic("register plugin failed: " + err.Error())
 	}
 
-	IrisApp = iris.New()
+	app = gin.New()
+	app.Use(gin.Logger())
+	app.Use(gin.Recovery())
 }
 
 func register() error {
@@ -34,10 +36,10 @@ func register() error {
 	p := &plugin.Plugin{
 		Id:            APP_NAME,
 		Description:   "",
-		ServeAddr:     "http://127.0.0.1:8081/api/v1/plugins",
+		ServerAddr:    "http://127.0.0.1:8081/api/v1/plugins",
 		TemplateMsgId: "8U98v1g7PWLZ5p4jbWNSpY5dr-hhG5kVuMAUew4PHnY",
 		Params: []plugin.PluginParam{
-			plugin.PluginParam{
+			{
 				Id:         "userid",
 				Name:       "工号",
 				Value:      "",
@@ -51,6 +53,6 @@ func register() error {
 	return c.Register(p)
 }
 
-func GetIrisApp() *iris.Application {
-	return IrisApp
+func GetApp() *gin.Engine {
+	return app
 }

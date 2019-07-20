@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"github.com/kataras/iris/context"
+	"github.com/gin-gonic/gin"
 )
 
-func RecordNotice(ctx context.Context) {
+func RecordNotice(ctx *gin.Context) {
 	SendNormalResponse(ctx, []string{})
 }

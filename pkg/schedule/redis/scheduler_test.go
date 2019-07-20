@@ -24,7 +24,7 @@ func TestScheduler(t *testing.T) {
 			WeekLimit:       "notHoliday",
 		},
 		Data: []plugin.PluginData{
-			plugin.PluginData{"filed1", "字段1", "value1"},
+			{"filed1", "字段1", "value1"},
 		},
 	}
 
