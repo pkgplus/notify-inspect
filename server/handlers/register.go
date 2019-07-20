@@ -52,13 +52,12 @@ func registerPluginWs(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	pluginIds := make([]string, 0)
+LOOP:
 	for {
 		t, data, err := conn.ReadMessage()
 		if err != nil {
-			for _, pid := range pluginIds {
-				regServer.Deregister(pid)
-			}
-			break
+			log.Printf("read from plugin ws failed : %v", err)
+			break LOOP
 		}
 
 		switch t {
@@ -94,10 +93,12 @@ func registerPluginWs(w http.ResponseWriter, r *http.Request) {
 
 		case websocket.CloseMessage:
 			log.Printf("the client %s has been disconnected!", conn.RemoteAddr().String())
-
-			for _, pid := range pluginIds {
-				regServer.Deregister(pid)
-			}
+			break LOOP
 		}
+	}
+
+	for _, pid := range pluginIds {
+		log.Printf("deregister the plugin %s!", pid)
+		regServer.Deregister(pid)
 	}
 }
