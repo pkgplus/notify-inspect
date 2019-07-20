@@ -55,6 +55,9 @@ func registerPluginWs(w http.ResponseWriter, r *http.Request) {
 	for {
 		t, data, err := conn.ReadMessage()
 		if err != nil {
+			for _, pid := range pluginIds {
+				regServer.Deregister(pid)
+			}
 			break
 		}
 
