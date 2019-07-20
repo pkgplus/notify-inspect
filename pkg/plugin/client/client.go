@@ -24,7 +24,7 @@ var (
 func init() {
 	addr := os.Getenv("WS_SERVER_URL")
 	if addr == "" {
-		addr = "wss://m.bingbaba.com/api/v2/notify/plugins/register"
+		addr = "wss://m.bingbaba.com/api/v2/notify/plugin_register"
 	}
 	DefaultRegisterClient = NewRegisterClient(addr)
 }
